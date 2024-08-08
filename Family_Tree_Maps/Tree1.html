@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Directed Chord Diagram</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #ffffff;
+    }
+    svg {
+      margin: 100px 50px 50px 50px; /* 增加外边距 */
+    }
+  </style>
+</head>
+<body>
+  <script>
+    const width = 1500;
+    const height = width;
+    const scale = 0.5;
+    const innerRadius = (Math.min(width, height) * 0.5 - 20) * scale;
+    const outerRadius = innerRadius + 13 * scale;
+    const textRadius = outerRadius + 35 * scale;
+    const outermostRadius = textRadius + 5;
+
+    const order = ["grandfather", "grandmother", "father", "mother", "uncle", "aunt",
+                   "husband", "wife", "brother", "sister", "cousin(M)", "cousin(F)", "son", "daughter",
+                   "nephew", "niece", "grandson", "granddaughter"];
+
+    const people = {
+      "wife": ["Maria Salomea Skłodowska-Curie"],
+      "husband": ["Pierre Curie"],
+      "father": ["Władysław Skłodowski"],
+      "mother": ["Bronisława Boguska Skłodowska"],
+      "grandfather": ["Józef Skłodowski"],
+      "grandmother": ["Salomea Sagtynowski Skłodowska"],
+      "brother": ["Józef Władysław Skłodowski"],
+      "sister": ["Helena Skłodowska-Szalay", "Bronisława Dłuska", "Zofia Skłodowska"],
+      "cousin(M)": ["Józef Boguski"],
+      "daughter": ["Ève Denise Curie Labouisse", "Irène Joliot-Curie"],
+      "niece": ["Helena Dłuski"],
+      "nephew": ["Jakub Dłuski", "Hanna Szalay"],
+      "grandson": ["Hélène Langevin-Joliot"],
+      "granddaughter": ["Pierre Adrien Joliot-Curie"]
+    };
+
+    const male = ["grandfather", "father", "uncle", "husband", "brother", "cousin(M)", "son", "nephew", "grandson"];
+    const female = ["grandmother", "mother", "aunt", "wife", "sister", "cousin(F)", "daughter", "niece", "granddaughter"];
+
+    const highlightRelations = ["mother", "grandmother", "brother", "sister", "niece", "nephew", "grandson", "granddaughter"];
+
+    const colors = d3.scaleOrdinal()
+                     .domain(order)
+                     .range(order.map(name => male.includes(name) ? "#4B9CD3" : "#FF6F61")); // 柔和的蓝色和红色
+
+    d3.csv('marie.csv').then(data => {
+      const names = order;
+      const index = new Map(names.map((name, i) => [name, i]));
+      const rawMatrix = Array.from(index, () => new Array(names.length).fill(0));
+
+      data.forEach(({ Relationship1, Relationship2, Count }) => {
+        if (+Count > 0) {
+          rawMatrix[index.get(Relationship1)][index.get(Relationship2)] += +Count;
+        }
+      });
+
+      const minAngle = 0.05;
+      const scaleFactor = 1;
+      const matrix = rawMatrix.map(row => row.map(value => value > 0 ? Math.sqrt(value) * scaleFactor + minAngle : minAngle));
+
+      const chord = d3.chordDirected()
+          .padAngle(0.04 * scale)
+          .sortSubgroups(d3.descending)
+          .sortChords(d3.descending);
+
+      const arc = d3.arc()
+          .innerRadius(innerRadius)
+          .outerRadius(outerRadius);
+
+      const ribbon = d3.ribbonArrow()
+          .radius(innerRadius)
+          .padAngle(0.01 * scale);
+
+      const formatValue = x => `${((x - minAngle) / scale).toFixed(0)}`;
+
+      const svg = d3.select("body").append("svg")
+          .attr("width", width + 200)
+          .attr("height", height + 400)
+          .attr("viewBox", [-width / 2 - 100, -height / 2 - 200, width + 200, height + 400].join(" "))
+          .attr("preserveAspectRatio", "xMidYMid meet")
+          .attr("style", "font: 12px sans-serif;");
+
+      const chords = chord(matrix);
+      const filteredChords = chords.filter(d => rawMatrix[d.source.index][d.target.index] > 0);
+
+      svg.append("g")
+          .attr("fill-opacity", 0.75)
+        .selectAll("path")
+        .data(filteredChords)
+        .join("path")
+          .attr("d", ribbon)
+          .attr("fill", d => colors(names[d.target.index])) // 使用目标节点的颜色
+          .style("mix-blend-mode", "multiply")
+        .append("title")
+          .text(d => `${names[d.source.index]} owes ${names[d.target.index]} ${formatValue(d.source.value)}`);
+
+      const g = svg.append("g")
+        .selectAll("g")
+        .data(chords.groups)
+        .join("g");
+
+      g.append("path")
+          .attr("d", arc)
+          .attr("fill", d => colors(names[d.index]))
+          .attr("stroke", "none"); // 移除边框
+
+      g.append("path")
+          .attr("id", d => `arc${d.index}`)
+          .attr("d", arc)
+          .attr("fill", "none");
+
+      g.append("text")
+        .append("textPath")
+          .attr("xlink:href", d => `#arc${d.index}`)
+          .attr("startOffset", "25%")
+          .attr("text-anchor", "middle")
+          .attr("dy", "1.5em")
+          .text(d => names[d.index])
+          .attr("fill", "black");
+
+      g.append("title")
+          .text(d => `${names[d.index]}
+owes ${formatValue(d3.sum(matrix[d.index]))}
+is owed ${formatValue(d3.sum(matrix, row => row[d.index]))}`);
+
+      const outerArc = d3.arc()
+          .innerRadius(outermostRadius)
+          .outerRadius(outermostRadius + 20 * scale);
+
+      const outerGroup = svg.append("g")
+        .selectAll("g")
+        .data(chords.groups.filter(d => people[names[d.index]]))
+        .join("g");
+
+      const peopleArcs = [];
+
+      outerGroup.each((d, i) => {
+        const namesList = people[names[d.index]];
+        const angleStep = (d.endAngle - d.startAngle) / namesList.length;
+        namesList.forEach((person, j) => {
+          peopleArcs.push({
+            name: person,
+            startAngle: d.startAngle + angleStep * j,
+            endAngle: d.startAngle + angleStep * (j + 1),
+            index: d.index
+          });
+        });
+      });
+
+      const personArc = d3.arc()
+          .innerRadius(outermostRadius)
+          .outerRadius(d => d.name === "Maria Salomea Skłodowska-Curie" ? outermostRadius + 13.5 * scale : outermostRadius + 9 * scale);
+
+      svg.append("g")
+        .selectAll("path")
+        .data(peopleArcs)
+        .join("path")
+        .attr("d", personArc)
+        .attr("fill", d => highlightRelations.includes(names[d.index]) ? "#808080" : colors(names[d.index])) // 使用灰色
+        .attr("stroke", "none"); // 移除边框
+
+      svg.append("g")
+        .selectAll("text")
+        .data(peopleArcs)
+        .join("text")
+        .each(function(d) {
+          const angle = (d.startAngle + d.endAngle) / 2;
+          const fontSize = "12px"; 
+          d3.select(this)
+            .attr("dy", "0.35em")
+            .attr("transform", `
+              rotate(${angle * 180 / Math.PI - 90})
+              translate(${outermostRadius + 15 * scale})
+              ${angle > Math.PI ? "rotate(180)" : ""}
+            `)
+            .attr("text-anchor", angle > Math.PI ? "end" : "start")
+            .text(d.name)
+            .attr("fill", "black")
+            .style("font-size", fontSize); // 应用字体大小
+        });
+
+      document.body.appendChild(svg.node());
+    });
+  </script>
+</body>

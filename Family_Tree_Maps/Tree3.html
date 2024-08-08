@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible"="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curie Family Tree</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        text {
+            font-size: 10px; /* 设置关系字体大小 */
+        }
+        .node text {
+            font-size: 12px; /* 设置节点名字字体大小 */
+        }
+        .core text {
+            font-size: 15px; /* 设置核心节点名字字体大小 */
+        }
+    </style>
+</head>
+<body>
+    <svg width="960" height="600"></svg>
+    <script>
+        var margin = {top: 60, bottom: 60, left: 60, right: 60};
+        var svg = d3.select("svg");
+        var width = svg.attr("width");
+        var height = svg.attr("height");
+        var g = svg.append("g")
+            .attr("transform", "translate(" + margin.top + "," + margin.left + ")");
+
+        // 定义箭头
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "-0 -5 10 10")
+            .attr("refX", 15)  // 调整箭头位置，确保不被节点覆盖
+            .attr("refY", 0)
+            .attr("orient", "auto")
+            .attr("markerWidth", 6)  // 调整箭头宽度
+            .attr("markerHeight", 6)  // 调整箭头高度
+            .attr("xoverflow", "visible")
+            .append("svg:path")
+            .attr("d", "M 0,-5 L 10 ,0 L 0,5")
+            .attr("fill", "#999")
+            .style("stroke","none");
+
+        // 节点数据
+        var family_data = [
+            ["Maria Salomea Skłodowska-Curie", "female", "Józef Skłodowski", "male", "granddaughter-grandfather"],
+            ["Pierre Curie", "male", "Augustine Hofer", "female", "grandson-grandmother"],
+            ["Maria Salomea Skłodowska-Curie", "female", "Władysław Skłodowski", "male", "daughter-father"],
+            ["Maria Salomea Skłodowska-Curie", "female", "Pierre Curie", "male", "wife-husband"],
+            ["Maria Salomea Skłodowska-Curie", "female", "Helena Skłodowska-Szalay", "female", "sister-sister"],
+            ["Maria Salomea Skłodowska-Curie", "female", "Bronisława Dłuska", "female", "sister-sister"],
+            ["Maria Salomea Skłodowska-Curie", "female", "Józef Boguski", "male", "cousin-cousin"],
+            ["Maria Salomea Skłodowska-Curie", "female", "Ève Denise Curie Labouisse", "female", "mother-daughter"],
+            ["Maria Salomea Skłodowska-Curie", "female", "Irène Joliot-Curie", "female", "mother-daughter"],
+            ["Pierre Curie", "male", "Jacques Curie", "male", "brother-brother"],
+            ["Pierre Curie", "male", "Paul-Jacques", "male", "brother-brother"]
+        ];
+
+        var nodes = [], edges = [], nodeMap = {};
+
+        family_data.forEach(function(d) {
+            if (!nodeMap[d[0]]) {
+                nodes.push({name: d[0], gender: d[1]});
+                nodeMap[d[0]] = true;
+            }
+            if (!nodeMap[d[2]]) {
+                nodes.push({name: d[2], gender: d[3]});
+                nodeMap[d[2]] = true;
+            }
+            edges.push({source: d[0], target: d[2], relation: d[4]});
+        });
+
+        // 力导向图
+        var forceSimulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(function(d) { return d.name; }).distance(150))
+            .force("charge", d3.forceManyBody().strength(-200))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        forceSimulation.nodes(nodes)
+            .on("tick", ticked);
+
+        forceSimulation.force("link")
+            .links(edges);
+
+        // 绘制边
+        var links = g.append("g")
+            .selectAll("line")
+            .data(edges)
+            .enter()
+            .append("line")
+            .attr("stroke", "grey")  // 统一用灰色
+            .attr("stroke-width", 1)
+            .attr("marker-end", "url(#arrowhead)");
+
+        var linksText = g.append("g")
+            .selectAll("text")
+            .data(edges)
+            .enter()
+            .append("text")
+            .attr("fill", "#555")
+            .text(function(d) {
+                return d.relation;
+            });
+
+        // 绘制节点
+        var gs = g.selectAll(".circleText")
+            .data(nodes)
+            .enter()
+            .append("g")
+            .attr("class", function(d) { return d.name === "Maria Salomea Skłodowska-Curie" ? "core" : "node"; })
+            .attr("transform", function(d, i) {
+                var cirX = d.x;
+                var cirY = d.y;
+                return "translate(" + cirX + "," + cirY + ")";
+            })
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended)
+            );
+
+        gs.append("circle")
+            .attr("r", 5)  // 调整点的大小
+            .attr("fill", function(d) { return d.gender === "male" ? "#73B8D5" : "#D84D3A"; });
+
+        gs.append("text")
+            .attr("x", -10)
+            .attr("y", -30)
+            .attr("dy", 10)
+            .text(function(d) {
+                return d.name;
+            });
+
+        function ticked() {
+            links
+                .attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; });
+
+            linksText
+                .attr("x", function(d) {
+                    return (d.source.x + d.target.x) / 2;
+                })
+                .attr("y", function(d) {
+                    return (d.source.y + d.target.y) / 2;
+                });
+
+            gs
+                .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+        }
+
+        function dragstarted(d) {
+            if (!d3.event.active) forceSimulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+
+        function dragended(d) {
+            if (!d3.event.active) forceSimulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+    </script>
+</body>
+</html>

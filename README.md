@@ -1,0 +1,23 @@
+# family member dataset
+As the basic unit of society, the family reflects the microscopic structure of division of labor and cooperation. In addition, cooperation among family members also reflects gender differences. The proportion of cooperation between women and women or men and men is higher than that between men and women. In contrast, the conjugal relationship is the most special and frequent form of cooperation in the family. Therefore, the study of family cooperation contributes to understanding the evolution of social division of labor and gender roles.
+Analysis based on diachronic text corpus. Through extensive collection of literature resources and narrative analysis, this study aims to build a family cooperation database and deepen our understanding of the mode of cooperation within the family.
+# task classification
+The research method is divided into two main parts: cooperation and family members. For cooperation, we first verify the feasibility of explicit, implicit, and non-cooperative, then obtain the data through syntactic dependency analysis and large language models, train the model to classify cooperation and non-cooperation, and finally analyze the key motivations in the data. For family members, the scope of the study was defined, data was obtained using syntactic dependency and coreference parsing tools, large language models were fine-tuned and information about family members was extracted, cooperative characteristics between different family members were analyzed, and finally, family tree maps within three generations were created by combining family information.
+![image](https://github.com/user-attachments/assets/fca10d97-dcc6-433f-a887-0308ed5dd588)
+# verify the feasibility
+The intra-group similarity is higher than inter-group similarity, which proves that the classification standard has some reliability.
+![image](https://github.com/user-attachments/assets/1117f919-77ad-4edf-8574-407e900b957f)
+# tuning and infering llm
+The research method is divided into three steps: extraction, fine-tuning and inference. First, traditional tools were used to analyze sentence structure, initially collect data of family members, and reduce the processing load of subsequent tasks. Next, the language model is fine-tuned using the data set containing the task instructions to improve its ability to follow the instructions. Finally, in view of the unknown information in the preliminary data, the fine-tuned model is used to supplement the data and combine the time information for reasoning, so as to obtain more complete and accurate family member relationship and related information.
+![image](https://github.com/user-attachments/assets/006c2fdb-f19a-499a-8b9a-5bd89249ef1c)
+# timing analysis
+When analyzing the temporal distribution and relationship type changes of family members' cooperation patterns from the 18th century to the 21st century, the data show that the relevant laws remain basically stable. Especially in frequent family relationships such as husband and wife, father and son, and brothers, the frequency of cooperative patterns did not change significantly over time, but remained at a high level.
+![image](https://github.com/user-attachments/assets/d0350c68-9c4b-403f-a6a8-39ca6e2aa6fe)
+# requency chart of cooperation among family members
+The graph shows the rate of cooperation and friendship between different family members. The horizontal axis represents the cooperation ratio (log10) and the vertical axis represents the friendship ratio (log10). Different colors and symbols represent different family relationships, such as father and son, mother and daughter, etc. By comparing these rates, we can see the frequency of cooperation and friendship between different family members, such as husbands and wives, who have the highest rate of cooperation, while other relationships such as grandparents and grandchildren have the lowest rate.
+![image](https://github.com/user-attachments/assets/cd00a140-9a65-4530-a3a9-39bb0b93d133)
+# family tree maps
+With the Curie family as the core, the family tree is organized and optimized using chord diagrams to show the frequency of cooperation among family members. The inner circle is arranged by seniority, and the outer circle shows specific information about people, with blue representing men, red representing women, and gray representing newly organized family members. The figure shows the rule that the immediate relatives are the most, the secondary relatives are the second, and the collateral relatives are less.
+![image](https://github.com/user-attachments/assets/df9f84c1-0e4e-4ad0-8efa-eec60140d2eb)
+
+
